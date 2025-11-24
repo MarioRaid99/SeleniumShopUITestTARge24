@@ -27,68 +27,6 @@ namespace SeleniumShopUITestTARge24
             Assert.IsNotNull(createLink);
         }
 
-        // CREATE VALID
-        [TestMethod]
-        public void Can_Create_Kindergarten_With_Valid_Data()
-        {
-            GoToKindergartenIndex();
-            Driver.FindElement(By.LinkText("Create")).Click();
-
-            Driver.FindElement(By.Id("GroupName")).SendKeys("A1");
-            Driver.FindElement(By.Id("ChildrenCount")).SendKeys("25");
-            Driver.FindElement(By.Id("KindergartenName")).SendKeys("Täheke123");
-            Driver.FindElement(By.Id("TeacherName")).SendKeys("KatiMati");
-
-            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
-
-            Assert.IsTrue(Driver.Url.Contains("/Kindergarten"));
-
-            var texts = Driver.FindElements(By.CssSelector("table tbody tr td")).Select(x => x.Text);
-            Assert.IsTrue(texts.Contains("A1"));
-        }
-
-        // CREATE INVALID
-        [TestMethod]
-        public void Cannot_Create_Kindergarten_With_Invalid_Data()
-        {
-            GoToKindergartenIndex();
-
-            var rowsBefore = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
-
-            Driver.FindElement(By.LinkText("Create")).Click();
-
-            Driver.FindElement(By.Id("GroupName")).SendKeys("B2");
-            Driver.FindElement(By.Id("ChildrenCount")).SendKeys("viis"); // vale tüüp!!!
-            Driver.FindElement(By.Id("KindergartenName")).SendKeys("LendavMaja");
-            Driver.FindElement(By.Id("TeacherName")).SendKeys("Mari123");
-
-            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
-
-            GoToKindergartenIndex();
-            var rowsAfter = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
-
-            Assert.AreEqual(rowsBefore, rowsAfter);
-        }
-
-        // DETAILS
-        [TestMethod]
-        public void Can_View_Kindergarten_Details()
-        {
-            GoToKindergartenIndex();
-
-            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
-            if (rows.Count == 0)
-            {
-                Can_Create_Kindergarten_With_Valid_Data();
-                GoToKindergartenIndex();
-            }
-
-            Driver.FindElement(By.LinkText("Details")).Click();
-
-            var title = Driver.FindElement(By.TagName("h1")).Text;
-            Assert.IsTrue(title.Contains("Details"));
-        }
-
         // EDIT VALID
         [TestMethod]
         public void Can_Edit_Kindergarten_With_Valid_Data()
@@ -121,6 +59,69 @@ namespace SeleniumShopUITestTARge24
             var texts = Driver.FindElements(By.CssSelector("table tbody tr td"))
                               .Select(x => x.Text);
             Assert.IsTrue(texts.Contains("UpdatedGroup"));
+        }
+
+        // CREATE VALID
+        [TestMethod]
+        public void Can_Create_Kindergarten_With_Valid_Data()
+        {
+            GoToKindergartenIndex();
+            Driver.FindElement(By.LinkText("Create")).Click();
+
+            Driver.FindElement(By.Id("GroupName")).SendKeys("A1");
+            Driver.FindElement(By.Id("ChildrenCount")).SendKeys("25");
+            Driver.FindElement(By.Id("KindergartenName")).SendKeys("Taheke");
+            Driver.FindElement(By.Id("TeacherName")).SendKeys("Kott Panak");
+
+            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
+
+            Assert.IsTrue(Driver.Url.Contains("/Kindergarten"));
+
+            var texts = Driver.FindElements(By.CssSelector("table tbody tr td")).Select(x => x.Text);
+            Assert.IsTrue(texts.Contains("A1"));
+        }
+
+        // CREATE INVALID
+        [TestMethod]
+        public void Cannot_Create_Kindergarten_With_Invalid_Data()
+        {
+            GoToKindergartenIndex();
+
+            var rowsBefore = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
+
+            Driver.FindElement(By.LinkText("Create")).Click();
+
+            Driver.FindElement(By.Id("GroupName")).SendKeys("B2");
+            Driver.FindElement(By.Id("ChildrenCount")).SendKeys("-522"); // vale tüüp!!!
+            Driver.FindElement(By.Id("KindergartenName")).SendKeys("LendavMaja");
+            Driver.FindElement(By.Id("TeacherName")).SendKeys("Mari");
+
+            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
+            Wait.Until(d => d.Url.Contains("/Kindergarten"));
+
+            GoToKindergartenIndex();
+            var rowsAfter = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
+
+            Assert.AreEqual(rowsBefore, rowsAfter);
+        }
+
+        // DETAILS
+        [TestMethod]
+        public void Can_View_Kindergarten_Details()
+        {
+            GoToKindergartenIndex();
+
+            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
+            if (rows.Count == 0)
+            {
+                Can_Create_Kindergarten_With_Valid_Data();
+                GoToKindergartenIndex();
+            }
+
+            Driver.FindElement(By.LinkText("Details")).Click();
+
+            var title = Driver.FindElement(By.TagName("h1")).Text;
+            Assert.IsTrue(title.Contains("Details"));
         }
 
         // EDIT INVALID
