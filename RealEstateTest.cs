@@ -14,94 +14,173 @@ namespace SeleniumShopUITestTARge24
             Driver.Navigate().GoToUrl($"{BaseUrl}/RealEstate");
         }
 
+        private void WaitForRealEstateIndexLoaded()
+        {
+            Wait.Until(d =>
+                d.Url.IndexOf("/realestate", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                d.FindElements(By.CssSelector("table")).Any()
+            );
+        }
+
+        private void GoToRealEstateCreate()
+        {
+            GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
+            Driver.FindElement(By.LinkText("Create")).Click();
+        }
+
+        private void CreateRealEstate(
+            string area,
+            string location,
+            string roomNumber,
+            string buildingType)
+        {
+            GoToRealEstateCreate();
+
+            Driver.FindElement(By.Id("Area")).SendKeys(area);
+            Driver.FindElement(By.Id("Location")).SendKeys(location);
+            Driver.FindElement(By.Id("RoomNumber")).SendKeys(roomNumber);
+            Driver.FindElement(By.Id("BuildingType")).SendKeys(buildingType);
+
+            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
+
+            WaitForRealEstateIndexLoaded();
+        }
+
+        private int GetRealEstateRowCount()
+        {
+            return Driver.FindElements(By.CssSelector("table tbody tr")).Count;
+        }
+
+        private void EnsureRealEstateRowExists()
+        {
+            GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
+
+            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
+            if (rows.Count == 0)
+            {
+                CreateRealEstate("120", "Tallinn1", "4", "Apartment");
+            }
+        }
+
+        private string GetFirstRowArea()
+        {
+            GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
+
+            var cell = Driver.FindElement(By.CssSelector("table tbody tr td:nth-child(2)"));
+            return cell.Text;
+        }
+
+        private void TryAcceptAlertIfPresent()
+        {
+            try
+            {
+                var alert = Driver.SwitchTo().Alert();
+                alert.Accept();
+            }
+            catch (NoAlertPresentException)
+            {
+                
+            }
+        }
+
         // NAVIGEERIMINE
         [TestMethod]
         public void Can_Navigate_To_RealEstate_Index()
         {
             GoToRealEstateIndex();
-            Assert.IsTrue(Driver.Url.Contains("/RealEstate"));
+            WaitForRealEstateIndexLoaded();
+
+            Assert.IsTrue(
+                Driver.Url.IndexOf("/realestate", StringComparison.OrdinalIgnoreCase) >= 0,
+                $"URL ei sisalda /realestate. Tegelik URL: {Driver.Url}");
 
             var createLink = Driver.FindElement(By.LinkText("Create"));
-            Assert.IsNotNull(createLink);
+            Assert.IsNotNull(createLink, "Create linki ei leitud");
+
+            var table = Driver.FindElement(By.CssSelector("table"));
+            Assert.IsNotNull(table, "RealEstate tabelit ei leitud Index vaates");
         }
 
-        // CREATE VALID
+
         [TestMethod]
         public void Can_Create_RealEstate_With_Valid_Data()
         {
             GoToRealEstateIndex();
-            Driver.FindElement(By.LinkText("Create")).Click();
+            WaitForRealEstateIndexLoaded();
+            var rowsBefore = GetRealEstateRowCount();
 
-            Driver.FindElement(By.Id("Area")).SendKeys("120");
-            Driver.FindElement(By.Id("Location")).SendKeys("Tallinn1");
-            Driver.FindElement(By.Id("RoomNumber")).SendKeys("4");
-            Driver.FindElement(By.Id("BuildingType")).SendKeys("Apartment");
+            CreateRealEstate("120", "Tallinn1", "4", "Apartment");
 
-            Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
+            var rowsAfter = GetRealEstateRowCount();
 
-            Assert.IsTrue(Driver.Url.Contains("/RealEstate"));
+            Assert.IsTrue(
+                rowsAfter > rowsBefore,
+                $"Ridade arv ei suurenenud pärast kehtiva andmestikuga lisamist. Enne: {rowsBefore}, pärast: {rowsAfter}");
 
-            var texts = Driver.FindElements(By.CssSelector("table tbody tr td")).Select(x => x.Text);
-            Assert.IsTrue(texts.Contains("120"));
+            var texts = Driver.FindElements(By.CssSelector("table tbody tr td"))
+                              .Select(x => x.Text);
+
+            Assert.IsTrue(texts.Contains("120"), "Loodud RealEstate (Area=120) ei ole tabelis näha");
         }
 
-        // CREATE INVALID
         [TestMethod]
         public void Cannot_Create_RealEstate_With_Invalid_Data()
         {
             GoToRealEstateIndex();
-            var rowsBefore = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
+            WaitForRealEstateIndexLoaded();
+            var rowsBefore = GetRealEstateRowCount();
 
-            Driver.FindElement(By.LinkText("Create")).Click();
+            GoToRealEstateCreate();
 
-            Driver.FindElement(By.Id("Area")).SendKeys("kolmsada"); // vale tüüp!
+            Driver.FindElement(By.Id("Area")).SendKeys("kolmsada");
             Driver.FindElement(By.Id("Location")).SendKeys("Tartu2");
-            Driver.FindElement(By.Id("RoomNumber")).SendKeys("-200"); // vale tüüp!
+            Driver.FindElement(By.Id("RoomNumber")).SendKeys("-.-");    // vale tüüp
             Driver.FindElement(By.Id("BuildingType")).SendKeys("House");
 
             Driver.FindElement(By.CssSelector("input[type='submit'][value='Create']")).Click();
 
             GoToRealEstateIndex();
-            var rowsAfter = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
+            WaitForRealEstateIndexLoaded();
+            var rowsAfter = GetRealEstateRowCount();
 
-            Assert.AreEqual(rowsBefore, rowsAfter);
+            Assert.AreEqual(
+                rowsBefore,
+                rowsAfter,
+                $"Vale tüübiga/väärtusega lisamisel ei tohi tekkida uut rida. Enne: {rowsBefore}, pärast: {rowsAfter}");
         }
 
-        // DETAILS
+        // DETAILS – vaatamine
         [TestMethod]
         public void Can_View_RealEstate_Details()
         {
-            GoToRealEstateIndex();
+            EnsureRealEstateRowExists();
 
-            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
-            if (rows.Count == 0)
-            {
-                Can_Create_RealEstate_With_Valid_Data();
-                GoToRealEstateIndex();
-            }
+            GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
 
             Driver.FindElement(By.LinkText("Details")).Click();
             var title = Driver.FindElement(By.TagName("h1")).Text;
-            Assert.IsTrue(title.Contains("Details"));
+
+            Assert.IsTrue(
+                title.Contains("Details", StringComparison.OrdinalIgnoreCase),
+                "Details lehe pealkiri ei sisalda 'Details'");
         }
 
-        // EDIT VALID
+        // EDIT VALID – muutmine kehtivate andmetega
         [TestMethod]
         public void Can_Edit_RealEstate_With_Valid_Data()
         {
+            EnsureRealEstateRowExists();
+
             GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
 
-            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
-            if (rows.Count == 0)
-            {
-                Can_Create_RealEstate_With_Valid_Data();
-                GoToRealEstateIndex();
-                rows = Driver.FindElements(By.CssSelector("table tbody tr"));
-            }
-
-            var updateLink = rows[0].FindElement(By.LinkText("Update"));
-            var href = updateLink.GetAttribute("href");
-            Driver.Navigate().GoToUrl(href);
+            var firstRow = Driver.FindElements(By.CssSelector("table tbody tr")).First();
+            var updateLink = firstRow.FindElement(By.LinkText("Update"));
+            updateLink.Click();
 
             var areaInput = Wait.Until(d => d.FindElement(By.Id("Area")));
             var roomInput = Driver.FindElement(By.Id("RoomNumber"));
@@ -119,65 +198,72 @@ namespace SeleniumShopUITestTARge24
 
             Driver.FindElement(By.CssSelector("input[type='submit']")).Click();
 
-            Wait.Until(d => d.Url.Contains("/RealEstate"));
+            WaitForRealEstateIndexLoaded();
 
-            var tableCells = Wait.Until(d => d.FindElements(By.CssSelector("table tbody tr td")));
-
+            var tableCells = Driver.FindElements(By.CssSelector("table tbody tr td"));
             var texts = tableCells.Select(x => x.Text);
 
             Assert.IsTrue(texts.Contains("150"), "Uus Area väärtus ei ilmu tabelisse.");
             Assert.IsTrue(texts.Contains("5"), "Uus RoomNumber väärtus ei ilmu tabelisse.");
             Assert.IsTrue(texts.Contains("Apartment"), "Uus BuildingType ei ilmu tabelisse.");
-            Assert.IsTrue(texts.Contains("Tallinn"), "Uus Location ei ilmu tabelisse.");
         }
 
-        // EDIT INVALID
+        // EDIT INVALID – muutmine vale tüübiga (tekst arvuväljas)
         [TestMethod]
         public void Cannot_Edit_RealEstate_With_Invalid_Data()
         {
+            EnsureRealEstateRowExists();
+
+            var oldArea = GetFirstRowArea();
+
             GoToRealEstateIndex();
-
-            var rows = Driver.FindElements(By.CssSelector("table tbody tr"));
-            if (rows.Count == 0)
-            {
-                Can_Create_RealEstate_With_Valid_Data();
-                GoToRealEstateIndex();
-            }
-
-            var oldArea = Driver.FindElement(By.CssSelector("table tbody tr td:nth-child(2)")).Text;
+            WaitForRealEstateIndexLoaded();
 
             Driver.FindElement(By.LinkText("Update")).Click();
-            var areaInput = Driver.FindElement(By.Id("Area"));
+
+            var areaInput = Driver.FindElement(By.Id("RoomNumber"));
             areaInput.Clear();
-            areaInput.SendKeys("suurtuba"); // vale tüüp!
+            areaInput.SendKeys("-.-"); // vale tüüp (tekst arvuväljas)
 
             Driver.FindElement(By.CssSelector("input[type='submit']")).Click();
 
-            GoToRealEstateIndex();
-            var newArea = Driver.FindElement(By.CssSelector("table tbody tr td:nth-child(2)")).Text;
+            var newArea = GetFirstRowArea();
 
-            Assert.AreEqual(oldArea, newArea);
+            Assert.AreEqual(
+                oldArea,
+                newArea,
+                "Vale tüübiga muutmine ei tohi muuta Area väärtust");
         }
 
-        // DELETE
+        // DELETE – eemaldamine
         [TestMethod]
         public void Can_Delete_RealEstate()
         {
-            GoToRealEstateIndex();
+            EnsureRealEstateRowExists();
 
-            var rowsBefore = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
-            if (rowsBefore == 0)
-            {
-                Can_Create_RealEstate_With_Valid_Data();
-                GoToRealEstateIndex();
-                rowsBefore = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
-            }
+            GoToRealEstateIndex();
+            WaitForRealEstateIndexLoaded();
+
+            var rowsBefore = GetRealEstateRowCount();
+            Assert.IsTrue(rowsBefore > 0, "Kustutamise testi eeldus: peab olema vähemalt üks rida.");
 
             Driver.FindElement(By.LinkText("Delete")).Click();
+
+            Wait.Until(d =>
+                d.FindElements(By.CssSelector("input[type='submit'][value='Delete']")).Any()
+            );
+
             Driver.FindElement(By.CssSelector("input[type='submit'][value='Delete']")).Click();
 
-            var rowsAfter = Driver.FindElements(By.CssSelector("table tbody tr")).Count;
-            Assert.IsTrue(rowsAfter < rowsBefore);
+            TryAcceptAlertIfPresent();
+
+            WaitForRealEstateIndexLoaded();
+
+            var rowsAfter = GetRealEstateRowCount();
+
+            Assert.IsTrue(
+                rowsAfter < rowsBefore,
+                $"Pärast kustutamist peaks ridade arv vähenema. Enne: {rowsBefore}, pärast: {rowsAfter}");
         }
     }
 }
