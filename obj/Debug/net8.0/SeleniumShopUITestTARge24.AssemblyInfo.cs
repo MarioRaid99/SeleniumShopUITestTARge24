@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SeleniumShopUITestTARge24")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76fe95990bd9847fb6d37e3d727b1e26abb5db8f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d1f96b12ad6998dfb02ddebaf47e8029769e4543")]
 [assembly: System.Reflection.AssemblyProductAttribute("SeleniumShopUITestTARge24")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SeleniumShopUITestTARge24")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

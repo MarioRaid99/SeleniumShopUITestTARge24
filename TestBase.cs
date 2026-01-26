@@ -3,6 +3,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System;
+using System.Linq;
 
 namespace SeleniumShopUITestTARge24
 {
@@ -25,7 +26,7 @@ namespace SeleniumShopUITestTARge24
             Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
             Wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(10));
 
-            GoHome();
+            Login();
         }
 
         [TestCleanup]
@@ -33,17 +34,72 @@ namespace SeleniumShopUITestTARge24
         {
             try
             {
-                Driver.Quit();
+                Logout();
+            }
+            catch
+            {
+            }
+
+            try
+            {
             }
             catch (Exception)
             {
-                // ignore error if unable to quit
             }
         }
 
         protected void GoHome()
         {
             Driver.Navigate().GoToUrl(BaseUrl);
+        }
+
+        protected virtual void Login()
+        {
+            Driver.Navigate().GoToUrl($"{BaseUrl}/Accounts/Login");
+
+            var emailInput = Wait.Until(d => d.FindElement(By.Id("Email")));
+            emailInput.Clear();
+            emailInput.SendKeys("MarioRaid@gmail.com");
+
+            var passwordInput = Driver.FindElement(By.Id("Password"));
+            passwordInput.Clear();
+            passwordInput.SendKeys("MarioRaid99!");
+
+            var loginButton = Driver.FindElement(By.CssSelector("button[type='submit']"));
+            loginButton.Click();
+
+            Wait.Until(d =>
+                !d.Url.Contains("/Accounts/Login", StringComparison.OrdinalIgnoreCase) ||
+                d.FindElements(By.LinkText("Logout")).Any()
+            );
+        }
+
+        protected virtual void Logout()
+        {
+            try
+            {
+                GoHome();
+
+                var logoutLinks = Driver.FindElements(By.LinkText("Logout"));
+                if (logoutLinks.Any())
+                {
+                    logoutLinks.First().Click();
+                    return;
+                }
+
+                var logoutButtons = Driver.FindElements(
+                    By.XPath("//button[contains(., 'Logout') or contains(., 'Log out')]"));
+                if (logoutButtons.Any())
+                {
+                    logoutButtons.First().Click();
+                }
+            }
+            catch (NoSuchElementException)
+            {
+            }
+            catch (WebDriverException)
+            {
+            }
         }
 
         protected void SetDateTimeLocal(string elementId, DateTime dt)
