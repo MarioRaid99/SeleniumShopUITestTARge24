@@ -59,11 +59,11 @@ namespace SeleniumShopUITestTARge24
 
             var emailInput = Wait.Until(d => d.FindElement(By.Id("Email")));
             emailInput.Clear();
-            emailInput.SendKeys("MarioRaid@gmail.com");
+            emailInput.SendKeys("SISESTA REGISTREERITUD KONTO EMAIL");
 
             var passwordInput = Driver.FindElement(By.Id("Password"));
             passwordInput.Clear();
-            passwordInput.SendKeys("MarioRaid99!");
+            passwordInput.SendKeys("SISESTA REGISTREERITUD KONTO PAROOL");
 
             var loginButton = Driver.FindElement(By.CssSelector("button[type='submit']"));
             loginButton.Click();
